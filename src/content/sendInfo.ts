@@ -1,4 +1,4 @@
-import { DownloadData, Tracks, Work } from '../types'
+import { DownloadAction, DownloadData, Tracks, Work } from '../types'
 
 import { getAuth } from './utils'
 
@@ -24,8 +24,8 @@ export const sendInfo = async (id: string) => {
     token: getAuth(),
   }
   await new Promise<void>((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { action: 'download', payload: data },
+    chrome.runtime.sendMessage<DownloadAction>(
+      { action: 'newDownload', payload: data },
       (response) => {
         if (response === 'ok') {
           resolve()

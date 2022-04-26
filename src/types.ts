@@ -65,14 +65,12 @@ export type DownloadData = {
   token: string
 }
 
-export type Action = DownloadAction | GetFileAction
+export type Action = DownloadAction | DownloadPrepared
 export type DownloadAction = {
-  action: 'download'
+  action: 'newDownload'
   payload: DownloadData
 }
-export type GetFileAction = {
-  action: 'getFile'
+export type DownloadPrepared = {
+  action: 'downloadPrepared'
   payload: null
 }
-
-export type DownloadQueueItem = { filename: string; data: number[] }

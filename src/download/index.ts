@@ -1,26 +1,37 @@
-import { DownloadQueueItem, GetFileAction } from '../types'
+import { DownloadData, DownloadPrepared } from '../types'
 
-const onload = () => {
-  chrome.runtime.sendMessage<GetFileAction, DownloadQueueItem>(
+import { handleDownload } from './download'
+
+const stripFilename = (s: string) => s.replaceAll(/[\\/|*?<>:"]/g, '_')
+
+let filename = ''
+
+const onload = async () => {
+  const currentTab = await chrome.tabs.getCurrent()
+  if (!currentTab.id) return
+  chrome.runtime.sendMessage<DownloadPrepared, DownloadData | string>(
     {
-      action: 'getFile',
+      action: 'downloadPrepared',
       payload: null,
     },
-    (fileData) => {
-      if (fileData) {
-        const { filename, data } = fileData
-        chrome.downloads.download(
-          {
-            url: URL.createObjectURL(
-              new Blob([Uint8Array.from(data)], { type: 'application/zip' }),
-            ),
-            filename,
-          },
-          () => window.close(),
-        )
-      } else {
+    async (data) => {
+      if (typeof data === 'string') {
+        window.alert(data)
         window.close()
+        return
       }
+      filename = `[${data.info.circle.name}] ${data.info.title}.zip`
+      document.title = filename
+
+      const blob = await new Response(handleDownload(data)).blob()
+
+      const url = URL.createObjectURL(blob)
+      chrome.downloads.download({
+        url,
+        filename: stripFilename(filename),
+        conflictAction: 'uniquify',
+      })
+      window.close()
     },
   )
 }

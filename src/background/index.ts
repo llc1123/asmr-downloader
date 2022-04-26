@@ -1,19 +1,33 @@
-import { Action, DownloadQueueItem } from '../types'
+import { Action, DownloadData } from '../types'
 
-import { handleDownload } from './download'
-
-const downloadQueue: DownloadQueueItem[] = []
+const dataMap = new Map<number, DownloadData>()
 
 chrome.runtime.onMessage.addListener(
-  ({ action, payload }: Action, _, sendResponse) => {
+  async ({ action, payload }: Action, sender, sendResponse) => {
     switch (action) {
-      case 'download': {
-        handleDownload(payload, downloadQueue)
+      case 'newDownload': {
         sendResponse('ok')
+        const targetTab = await chrome.tabs.create({
+          url: 'download.html',
+          active: false,
+        })
+        if (!targetTab.id) break
+        dataMap.set(targetTab.id, payload)
         break
       }
-      case 'getFile': {
-        sendResponse(downloadQueue.shift())
+      case 'downloadPrepared': {
+        const tabId = sender.tab?.id
+        if (!tabId) {
+          sendResponse('no tab id')
+          break
+        }
+        const data = dataMap.get(tabId)
+        if (!data) {
+          sendResponse('no data')
+          break
+        }
+        sendResponse(data)
+        dataMap.delete(tabId)
         break
       }
       default: {

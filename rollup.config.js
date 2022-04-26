@@ -14,12 +14,12 @@ const config = [
   {
     input: 'src/background/index.ts',
     output: { file: 'dist/background.js', format: 'iife' },
-    plugins: [nodeResolve(), commonjs(), terser(), typescript()],
+    plugins: [terser(), typescript()],
   },
   {
     input: 'src/download/index.ts',
     output: { file: 'dist/download.js', format: 'iife' },
-    plugins: [terser(), typescript()],
+    plugins: [nodeResolve(), commonjs(), terser(), typescript()],
   },
 ]
 
