@@ -1,5 +1,5 @@
 import { PromisePool } from '@supercharge/promise-pool'
-import { Zip, ZipPassThrough } from 'fflate'
+import { AsyncZipDeflate, Zip } from 'fflate'
 
 import { DownloadData, Tracks } from '../types'
 
@@ -62,7 +62,7 @@ export const handleDownload = (data: DownloadData) => {
           try {
             const rs = await downloadFile(file.url, token, signal)
             if (!rs) return
-            const addFile = new ZipPassThrough(file.filename)
+            const addFile = new AsyncZipDeflate(file.filename)
             zip.add(addFile)
             const reader = rs.getReader()
             while (hasError === null) {
