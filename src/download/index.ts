@@ -23,7 +23,11 @@ const onload = async () => {
       filename = `[${data.info.circle.name}] ${data.info.title}.zip`
       document.title = filename
 
-      const blob = await new Response(handleDownload(data)).blob()
+      const blob = await new Response(handleDownload(data), {
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+      }).blob()
 
       const url = URL.createObjectURL(blob)
       chrome.downloads.download({
