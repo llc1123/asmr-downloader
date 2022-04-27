@@ -13,7 +13,6 @@ const parseTracks = (tracks: Tracks, root: string, dataset: DownloadFile[]) => {
     if (track.type === 'folder') {
       parseTracks(track.children, `${root}${track.title}/`, dataset)
     } else {
-      if (track.title.endsWith('.wav')) continue
       dataset.push({
         filename: `${root}${track.title}`,
         url: track.mediaDownloadUrl,
