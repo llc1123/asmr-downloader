@@ -21,9 +21,21 @@ const parseTracks = (tracks: Tracks, root: string, dataset: DownloadFile[]) => {
   }
 }
 
-const downloadFile = async (url: string, auth: string, signal: AbortSignal) => {
-  const r = await fetch(`${url}?token=${auth}`, { signal })
-  return r.body
+const downloadFileWithRetry = async (
+  url: string,
+  auth: string,
+  signal: AbortSignal,
+) => {
+  for (let i = 1; i <= 10; i++) {
+    try {
+      return await fetch(`${url}?token=${auth}`, { signal }).then((r) =>
+        r.arrayBuffer(),
+      )
+    } catch (e) {
+      console.warn(`download error (${i}): `, e, url)
+    }
+  }
+  throw new Error(`download failed: ${url}`)
 }
 
 export const handleDownload = (data: DownloadData) => {
@@ -59,19 +71,10 @@ export const handleDownload = (data: DownloadData) => {
             pool.stop()
           }
           try {
-            const rs = await downloadFile(file.url, token, signal)
-            if (!rs) return
             const addFile = new AsyncZipDeflate(file.filename)
             zip.add(addFile)
-            const reader = rs.getReader()
-            while (hasError === null) {
-              const { done, value } = await reader.read()
-              if (done) {
-                addFile.push(new Uint8Array(), true)
-                break
-              }
-              addFile.push(value)
-            }
+            const buffer = await downloadFileWithRetry(file.url, token, signal)
+            addFile.push(new Uint8Array(buffer), true)
           } catch (e) {
             hasError = e
             abortController.abort()
