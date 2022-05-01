@@ -12,11 +12,11 @@
         "https://www.asmr.one/*"
       ],
       "js": [
-        "dist/content.js"
+        "content.js"
       ]
     }
   ],
   "background": {
-    "service_worker": "dist/background.js"
+    "service_worker": "background.js"
   }
 }
