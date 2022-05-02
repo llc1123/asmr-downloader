@@ -43,6 +43,7 @@
   "dependencies": {
     "@supercharge/promise-pool": "^2.1.0",
     "fflate": "^0.7.3",
+    "filesize": "^8.0.7",
     "react": "^18.1.0",
     "react-dom": "^18.1.0"
   }

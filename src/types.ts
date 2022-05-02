@@ -74,3 +74,9 @@ export type DownloadPrepared = {
   action: 'downloadPrepared'
   payload: null
 }
+
+export type FileProgress = {
+  loaded: number
+  total: number
+  retry: number
+}

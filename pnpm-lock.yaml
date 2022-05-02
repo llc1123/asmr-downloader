@@ -18,6 +18,7 @@ specifiers:
   eslint-plugin-react: ^7.29.4
   eslint-plugin-react-hooks: ^4.5.0
   fflate: ^0.7.3
+  filesize: ^8.0.7
   postcss: ^8.4.13
   prettier: ^2.6.2
   react: ^18.1.0
@@ -33,6 +34,7 @@ specifiers:
 dependencies:
   '@supercharge/promise-pool': 2.1.0
   fflate: 0.7.3
+  filesize: 8.0.7
   react: 18.1.0
   react-dom: 18.1.0_react@18.1.0
 
@@ -1671,6 +1673,11 @@ packages:
     dependencies:
       flat-cache: 3.0.4
     dev: true
+
+  /filesize/8.0.7:
+    resolution: {integrity: sha512-pjmC+bkIF8XI7fWaH8KxHcZL3DPybs1roSKP4rKDvy20tAWwIObE4+JIseG2byfGKhud5ZnM4YSGKBz7Sh0ndQ==}
+    engines: {node: '>= 0.4.0'}
+    dev: false
 
   /fill-range/7.0.1:
     resolution: {integrity: sha512-qOo9F+dMUmC2Lcb4BbVvnKJxTPjCm+RRpe4gDuGrzkL7mEVl/djYSu2OdQ2Pa302N4oqkSg9ir6jaLWJ2USVpQ==}
