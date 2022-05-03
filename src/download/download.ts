@@ -59,37 +59,37 @@ export const handleDownload = (
       }))
     }
 
-    for (let i = 1; i <= 10; i++) {
-      try {
-        const response = await fetch(`${url}?token=${token}`, { signal })
-        const total = parseInt(
-          response.headers.get('content-length') || '0',
-          10,
-        )
-        let loaded = 0
-        updateProgress(loaded, total)
-        const reader = response.body?.getReader()
-        if (!reader) throw new Error('no reader')
-        const res = new Response(
-          new ReadableStream<Uint8Array>({
-            async start(controller) {
-              while (true) {
-                const { done, value } = await reader.read()
-                if (done) break
-                loaded += value.byteLength
-                updateProgress(loaded, total)
-                controller.enqueue(value)
-              }
-              controller.close()
-            },
-          }),
-        )
-        return await res.arrayBuffer()
-      } catch (e) {
-        retry += 1
-      }
-    }
-    throw new Error(`download failed: ${url}`)
+    const response = await fetch(`${url}?token=${token}`, { signal })
+    const total = parseInt(response.headers.get('content-length') || '0', 10)
+    let loaded = 0
+    updateProgress(loaded, total)
+
+    let reader = response.body?.getReader()
+
+    const rs = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        while (true) {
+          try {
+            if (!reader) throw new Error('no reader')
+            const { done, value } = await reader.read()
+            if (done) break
+            loaded += value.byteLength
+            updateProgress(loaded, total)
+            controller.enqueue(value)
+          } catch (e) {
+            retry += 1
+            reader = (
+              await fetch(`${url}?token=${token}`, {
+                signal,
+                headers: { Range: `bytes=${loaded}-` },
+              })
+            ).body?.getReader()
+          }
+        }
+        controller.close()
+      },
+    })
+    return rs
   }
 
   return new ReadableStream<Uint8Array>({
@@ -116,8 +116,19 @@ export const handleDownload = (
           try {
             const addFile = new AsyncZipDeflate(file.filename)
             zip.add(addFile)
-            const buffer = await downloadFileWithRetry(file.filename, file.url)
-            addFile.push(new Uint8Array(buffer), true)
+            const response = await downloadFileWithRetry(
+              file.filename,
+              file.url,
+            )
+            const rs = response.getReader()
+            while (true) {
+              const { done, value } = await rs.read()
+              if (done) {
+                addFile.push(new Uint8Array(), true)
+                break
+              }
+              addFile.push(value, false)
+            }
           } catch (e) {
             hasError = e
             abortController.abort()
