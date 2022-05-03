@@ -62,6 +62,7 @@ export const handleDownload = (
     const response = await fetch(`${url}?token=${token}`, { signal })
     const total = parseInt(response.headers.get('content-length') || '0', 10)
     let loaded = 0
+    let duplicatedLength = 0
     updateProgress(loaded, total)
 
     let reader = response.body?.getReader()
@@ -75,15 +76,29 @@ export const handleDownload = (
             if (done) break
             loaded += value.byteLength
             updateProgress(loaded, total)
-            controller.enqueue(value)
+            if (duplicatedLength === 0) {
+              controller.enqueue(value)
+              continue
+            } else if (duplicatedLength < value.byteLength) {
+              const newValue = value.slice(duplicatedLength)
+              controller.enqueue(newValue)
+              duplicatedLength = 0
+              continue
+            } else {
+              duplicatedLength -= value.byteLength
+              continue
+            }
           } catch (e) {
             retry += 1
-            reader = (
-              await fetch(`${url}?token=${token}`, {
-                signal,
-                headers: { Range: `bytes=${loaded}-` },
-              })
-            ).body?.getReader()
+            const res = await fetch(`${url}?token=${token}`, {
+              signal,
+              headers: { Range: `bytes=${loaded}-` },
+            })
+            if (res.status === 200) {
+              duplicatedLength = loaded
+              loaded = 0
+            }
+            reader = res.body?.getReader()
           }
         }
         controller.close()
