@@ -79,4 +79,5 @@ export type FileProgress = {
   loaded: number
   total: number
   retry: number
+  speed: number
 }

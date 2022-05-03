@@ -3,6 +3,8 @@ import { AsyncZipDeflate, Zip } from 'fflate'
 
 import { DownloadData, FileProgress, Tracks } from '../types'
 
+const SPEED_WINDOW_SIZE = 3
+
 type DownloadFile = {
   filename: string
   url: string
@@ -36,7 +38,10 @@ export const handleDownload = (
 
   setDownloadProgress(
     Object.fromEntries(
-      dataset.map((file) => [file.filename, { loaded: 0, total: 0, retry: 0 }]),
+      dataset.map((file) => [
+        file.filename,
+        { loaded: 0, total: 0, retry: 0, speed: 0 },
+      ]),
     ),
   )
 
@@ -48,22 +53,34 @@ export const handleDownload = (
   const downloadFileWithRetry = async (filename: string, url: string) => {
     let retry = 0
 
-    const updateProgress = (loaded: number, total: number) => {
+    const response = await fetch(`${url}?token=${token}`, { signal })
+    const total = parseInt(response.headers.get('content-length') || '0', 10)
+    let loaded = 0
+    let duplicatedLength = 0
+    let speedWindow = 0
+
+    const updateProgress = () => {
       setDownloadProgress((state) => ({
         ...state,
         [filename]: {
           loaded,
           total,
           retry,
+          speed: speedWindow / SPEED_WINDOW_SIZE,
         },
       }))
     }
 
-    const response = await fetch(`${url}?token=${token}`, { signal })
-    const total = parseInt(response.headers.get('content-length') || '0', 10)
-    let loaded = 0
-    let duplicatedLength = 0
-    updateProgress(loaded, total)
+    const countSpeed = (bytes: number) => {
+      speedWindow += bytes
+      updateProgress()
+      setTimeout(() => {
+        speedWindow -= bytes
+        updateProgress()
+      }, SPEED_WINDOW_SIZE * 1000)
+    }
+
+    updateProgress()
 
     let reader = response.body?.getReader()
 
@@ -75,7 +92,7 @@ export const handleDownload = (
             const { done, value } = await reader.read()
             if (done) break
             loaded += value.byteLength
-            updateProgress(loaded, total)
+            countSpeed(value.byteLength)
             if (duplicatedLength === 0) {
               controller.enqueue(value)
               continue
@@ -97,6 +114,7 @@ export const handleDownload = (
             if (res.status === 200) {
               duplicatedLength = loaded
               loaded = 0
+              updateProgress()
             }
             reader = res.body?.getReader()
           }

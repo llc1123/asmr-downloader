@@ -1,5 +1,5 @@
 import filesize from 'filesize'
-import { FC } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 
 import { FileProgress } from '../types'
 
@@ -13,6 +13,20 @@ const DownloadItem: FC<{ name: string; data: FileProgress }> = ({
   const total = filesize(data.total, { base: 2 })
 
   const percent = data.total ? data.loaded / data.total : 0
+
+  const [throttledText, setThrottledText] = useState('')
+
+  const throttled = useRef(false)
+
+  useEffect(() => {
+    if (throttled.current) return
+    throttled.current = true
+    const speed = filesize(data.speed, { base: 2 })
+    setThrottledText(` - ${speed}/s`)
+    setTimeout(() => {
+      throttled.current = false
+    }, 1000)
+  }, [data])
 
   return (
     <div className={styles.card}>
@@ -34,7 +48,8 @@ const DownloadItem: FC<{ name: string; data: FileProgress }> = ({
       </div>
       <div className={styles.info}>
         <div className={styles.size}>
-          {loaded} / {total}
+          {data.loaded !== 0 && `${loaded} / ${total}`}
+          {data.loaded !== 0 && data.loaded !== data.total && throttledText}
         </div>
         {data.retry !== 0 && (
           <>
